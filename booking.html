@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LucBooking - Booking</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1 class="brand-name">LucBooking</h1>
+    <div class="booking-container">
+        <h2 id="roomTitle">Room</h2>
+
+        <!-- Calendar Section -->
+        <h3 id="currentMonth"></h3>
+        <div id="calendar"></div>
+
+        <!-- Time Slot Selection (Initially Hidden) -->
+        <div id="timeSlotContainer" style="display: none;">
+            <h3>Select a Time Slot</h3>
+            <select id="timeSlot" required></select>
+            <button id="bookNow">Book Now</button>
+        </div>
+    </div>
+
+    <script>
+        // Get room number from URL
+        const params = new URLSearchParams(window.location.search);
+        const roomNumber = params.get("room") || "Unknown Room";
+        document.getElementById("roomTitle").innerText = "Room " + roomNumber;
+
+        // Generate Calendar
+        const calendarDiv = document.getElementById("calendar");
+        const currentMonth = document.getElementById("currentMonth");
+        const today = new Date();
+        let selectedDate = null; // Store selected date
+
+        function generateCalendar() {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            currentMonth.innerText = firstDay.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            calendarDiv.innerHTML = ""; // Clear previous calendar
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const dayElement = document.createElement("div");
+                dayElement.classList.add("calendar-day");
+                dayElement.innerText = day;
+                dayElement.addEventListener("click", () => selectDate(day));
+                calendarDiv.appendChild(dayElement);
+            }
+        }
+
+        function selectDate(day) {
+            selectedDate = `${today.getFullYear()}-${today.getMonth() + 1}-${day}`;
+            showTimeSlots(selectedDate);
+        }
+
+        function showTimeSlots(date) {
+            const timeSlotContainer = document.getElementById("timeSlotContainer");
+            const timeSlotSelect = document.getElementById("timeSlot");
+            timeSlotSelect.innerHTML = ""; // Clear previous options
+
+            const timeSlots = [
+                "8:00 AM - 9:00 AM", "9:00 AM - 10:00 AM", "10:00 AM - 11:00 AM",
+                "11:00 AM - 12:00 PM", "12:00 PM - 1:00 PM", "1:00 PM - 2:00 PM",
+                "2:00 PM - 3:00 PM", "3:00 PM - 4:00 PM", "4:00 PM - 5:00 PM",
+                "5:00 PM - 6:00 PM", "6:00 PM - 7:00 PM", "7:00 PM - 8:00 PM"
+            ];
+
+            timeSlots.forEach(slot => {
+                const option = document.createElement("option");
+                option.value = slot;
+                option.innerText = slot;
+                timeSlotSelect.appendChild(option);
+            });
+
+            timeSlotContainer.style.display = "block";
+        }
+
+        document.getElementById("bookNow").addEventListener("click", function() {
+            if (!selectedDate) {
+                alert("Please select a date first.");
+                return;
+            }
+
+            const selectedTime = document.getElementById("timeSlot").value;
+            alert(`Room ${roomNumber} booked on ${selectedDate} at ${selectedTime}!`);
+        });
+
+        generateCalendar(); // Initialize calendar
+    </script>
+</body>
+</html>
