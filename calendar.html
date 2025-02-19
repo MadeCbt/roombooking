@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Room Booking Calendar</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 20px;
+    }
+    /* Calendar Container */
+    .calendar-container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .month-year {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    /* Calendar Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: center;
+    }
+    th {
+      background: #f2f2f2;
+      padding: 10px 0;
+    }
+    td {
+      height: 100px;
+      vertical-align: top;
+      border: 1px solid #eee;
+      position: relative;
+      cursor: pointer;
+    }
+    td:hover {
+      background: #f0f0f0;
+    }
+    /* Day Number (top-right) */
+    .day-number {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 0.9rem;
+      color: #333;
+    }
+    /* Highlight days that have bookings */
+    .has-bookings {
+      background-color: #d2f8d2 !important;
+    }
+    /* Small labels for each booking in the calendar cell */
+    .booking-label {
+      margin: 3px;
+      padding: 2px 5px;
+      background-color: #42a5f5;
+      color: #fff;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      text-align: left;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    /* MODAL STYLES */
+    #modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      z-index: 999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background-color: #fff;
+      margin: 100px auto;
+      padding: 20px;
+      width: 400px;
+      border-radius: 5px;
+      position: relative;
+    }
+    #closeBtn {
+      position: absolute;
+      right: 15px;
+      top: 10px;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    /* Existing Bookings List in Modal */
+    .existing-bookings {
+      margin-bottom: 10px;
+    }
+    .booking-item {
+      background: #e6e6e6;
+      padding: 5px;
+      margin: 5px 0;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .booking-item span {
+      font-size: 0.9rem;
+    }
+    .remove-button {
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 3px 5px;
+      cursor: pointer;
+    }
+    .remove-button:hover {
+      background: #c9302c;
+    }
+    /* Form for adding a new booking */
+    .new-booking-form {
+      display: flex;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    select, input[type="text"], button {
+      padding: 5px;
+      font-size: 0.9rem;
+    }
+    .add-button {
+      background: #5cb85c;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .add-button:hover {
+      background: #4cae4c;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Room Booking</h1>
+
+  <div class="calendar-container">
+    <div class="month-year" id="monthYear"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Sun</th>
+          <th>Mon</th>
+          <th>Tue</th>
+          <th>Wed</th>
+          <th>Thu</th>
+          <th>Fri</th>
+          <th>Sat</th>
+        </tr>
+      </thead>
+      <tbody id="calendarBody">
+        <!-- Calendar days will be injected here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal">
+    <div class="modal-content">
+      <span id="closeBtn">&times;</span>
+      <h3 id="modal-date"></h3>
+      
+      <!-- Existing Bookings -->
+      <div class="existing-bookings" id="existingBookings"></div>
+      
+      <!-- New Booking Form -->
+      <div class="new-booking-form">
+        <select id="hourSelect">
+          <!-- We will add <option>8 AM, 9 AM, etc. dynamically -->
+        </select>
+        <input type="text" id="noteInput" placeholder="Booking note">
+        <button class="add-button" id="addBookingBtn">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------------------
+    // 1) Global Variables and Data Storage
+    // -------------------------------------
+    let currentDate = new Date();
+    let currentMonth = currentDate.getMonth();
+    let currentYear = currentDate.getFullYear();
+
+    // Store bookings in an object keyed by YYYY-MM-DD
+    // Each day is an array of objects: { hour: number, note: string }
+    let bookings = {};
+
+    // -------------------------------------
+    // 2) Utility Functions
+    // -------------------------------------
+    // Convert a 24-hour integer (8..19) to a 12-hour format string (e.g. "8 AM")
+    function formatHour(hour) {
+      const ampm = hour < 12 ? 'AM' : 'PM';
+      let h = hour % 12;
+      if (h === 0) h = 12; 
+      return h + ' ' + ampm;
+    }
+    // Return something like "8 AM - 9 AM"
+    function getTimeRange(hour) {
+      return `${formatHour(hour)} - ${formatHour(hour + 1)}`;
+    }
+
+    // Get or create array for a given dayKey
+    function getBookingsForDay(dayKey) {
+      if (!bookings[dayKey]) {
+        bookings[dayKey] = [];
+      }
+      return bookings[dayKey];
+    }
+
+    // -------------------------------------
+    // 3) Render the Month Calendar
+    // -------------------------------------
+    function renderCalendar(month, year) {
+      const monthYearEl = document.getElementById('monthYear');
+      const calendarBody = document.getElementById('calendarBody');
+
+      // Clear existing rows
+      calendarBody.innerHTML = '';
+
+      // Set the month-year header
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      monthYearEl.textContent = `${monthNames[month]} ${year}`;
+
+      // First day of the month
+      const firstDay = new Date(year, month, 1).getDay(); // 0=Sun,1=Mon,...
+      // Number of days in this month
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      let dateNum = 1;
+      for (let row = 0; row < 6; row++) {
+        let tr = document.createElement('tr');
+
+        for (let col = 0; col < 7; col++) {
+          let td = document.createElement('td');
+
+          // Check if valid date
+          if ((row === 0 && col < firstDay) || dateNum > daysInMonth) {
+            td.innerHTML = '';
+          } else {
+            // Build the dayKey: YYYY-MM-DD
+            let dayKey = `${year}-${String(month+1).padStart(2,'0')}-${String(dateNum).padStart(2,'0')}`;
+
+            // Day number
+            td.innerHTML = `<div class="day-number">${dateNum}</div>`;
+
+            // If there are bookings for this day, highlight & display them
+            let dayBookings = bookings[dayKey];
+            if (dayBookings && dayBookings.length > 0) {
+              td.classList.add('has-bookings');
+              // Display each booking as a small label
+              dayBookings.forEach(b => {
+                let bookingEl = document.createElement('div');
+                bookingEl.className = 'booking-label';
+                bookingEl.textContent = `${getTimeRange(b.hour)}: ${b.note}`;
+                td.appendChild(bookingEl);
+              });
+            }
+
+            // Clicking on the cell opens the modal
+            td.addEventListener('click', () => {
+              openDayModal(dayKey);
+            });
+
+            dateNum++;
+          }
+
+          tr.appendChild(td);
+        }
+        calendarBody.appendChild(tr);
+
+        // Stop if we've filled all days
+        if (dateNum > daysInMonth) break;
+      }
+    }
+
+    // -------------------------------------
+    // 4) Modal Logic
+    // -------------------------------------
+    const modal = document.getElementById('modal');
+    const closeBtn = document.getElementById('closeBtn');
+    const modalDateEl = document.getElementById('modal-date');
+    const existingBookingsEl = document.getElementById('existingBookings');
+    const hourSelect = document.getElementById('hourSelect');
+    const noteInput = document.getElementById('noteInput');
+    const addBookingBtn = document.getElementById('addBookingBtn');
+
+    // Populate hourSelect with 8 AM..7 PM
+    function populateHourSelect() {
+      hourSelect.innerHTML = '';
+      for (let hour = 8; hour < 20; hour++) {
+        let option = document.createElement('option');
+        option.value = hour;
+        option.textContent = getTimeRange(hour);
+        hourSelect.appendChild(option);
+      }
+    }
+    populateHourSelect(); // do once on page load
+
+    let currentDayKey = null; // track which day is open in the modal
+
+    function openDayModal(dayKey) {
+      currentDayKey = dayKey;
+      modalDateEl.textContent = dayKey;
+
+      // Show existing bookings
+      renderExistingBookings(dayKey);
+
+      // Reset the new booking form
+      noteInput.value = '';
+
+      // Show modal
+      modal.style.display = 'block';
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    window.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+
+    // Show existing bookings in the modal
+    function renderExistingBookings(dayKey) {
+      existingBookingsEl.innerHTML = '';
+      let dayBookings = getBookingsForDay(dayKey);
+
+      if (dayBookings.length === 0) {
+        existingBookingsEl.textContent = 'No bookings yet.';
+        return;
+      }
+
+      dayBookings.forEach((b, index) => {
+        let div = document.createElement('div');
+        div.className = 'booking-item';
+
+        let span = document.createElement('span');
+        span.textContent = `${getTimeRange(b.hour)}: ${b.note}`;
+
+        let removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-button';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', () => {
+          removeBooking(dayKey, index);
+        });
+
+        div.appendChild(span);
+        div.appendChild(removeBtn);
+        existingBookingsEl.appendChild(div);
+      });
+    }
+
+    // Remove a booking from the array
+    function removeBooking(dayKey, bookingIndex) {
+      let dayBookings = getBookingsForDay(dayKey);
+      dayBookings.splice(bookingIndex, 1);
+      // Re-render both the modal and the calendar
+      renderExistingBookings(dayKey);
+      renderCalendar(currentMonth, currentYear);
+    }
+
+    // Add a new booking
+    addBookingBtn.addEventListener('click', () => {
+      let hour = parseInt(hourSelect.value, 10);
+      let note = noteInput.value.trim();
+      if (!note) return alert('Please enter a note.');
+
+      let dayBookings = getBookingsForDay(currentDayKey);
+      // Add the new booking
+      dayBookings.push({ hour, note });
+      // Re-render
+      renderExistingBookings(currentDayKey);
+      renderCalendar(currentMonth, currentYear);
+
+      // Clear the note input
+      noteInput.value = '';
+    });
+
+    // -------------------------------------
+    // 5) Initialization
+    // -------------------------------------
+    renderCalendar(currentMonth, currentYear);
+  </script>
+</body>
+</html>
