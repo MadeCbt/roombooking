@@ -150,7 +150,8 @@
 </head>
 <body>
 
-  <h1>Room Booking</h1>
+  <!-- We will update this heading based on the 'room' parameter -->
+  <h1 id="roomName">Room Booking</h1>
 
   <div class="calendar-container">
     <div class="month-year" id="monthYear"></div>
@@ -385,26 +386,45 @@
       renderCalendar(currentMonth, currentYear);
     }
 
-    // Add a new booking
+    // Add a new booking (PREVENT DUPLICATE TIME SLOT)
     addBookingBtn.addEventListener('click', () => {
       let hour = parseInt(hourSelect.value, 10);
       let note = noteInput.value.trim();
-      if (!note) return alert('Please enter a note.');
+      if (!note) {
+        alert('Please enter a note.');
+        return;
+      }
 
       let dayBookings = getBookingsForDay(currentDayKey);
-      // Add the new booking
+
+      // 1) Check if that hour is already booked
+      let alreadyBooked = dayBookings.some(b => b.hour === hour);
+      if (alreadyBooked) {
+        alert('This time slot is already booked for that day. Please choose a different slot.');
+        return;
+      }
+
+      // 2) Add the new booking
       dayBookings.push({ hour, note });
-      // Re-render
+
+      // 3) Re-render
       renderExistingBookings(currentDayKey);
       renderCalendar(currentMonth, currentYear);
 
-      // Clear the note input
+      // 4) Clear the note input
       noteInput.value = '';
     });
 
     // -------------------------------------
     // 5) Initialization
     // -------------------------------------
+
+    // (NEW) Parse "room" from the URL, and update the heading
+    let params = new URLSearchParams(window.location.search);
+    let selectedRoom = params.get('room') || "Unknown Room";
+    document.getElementById("roomName").innerText = `Room: ${selectedRoom}`;
+
+    // Render the calendar
     renderCalendar(currentMonth, currentYear);
   </script>
 </body>

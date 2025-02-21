@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Select a Room</title>
@@ -8,6 +8,9 @@
       background: #f4f4f4;
       font-family: Arial, sans-serif;
       margin: 20px;
+    }
+    h1 {
+      margin-bottom: 20px;
     }
     .room {
       background: #fff;
@@ -24,14 +27,38 @@
 </head>
 <body>
   <h1>Select a Room</h1>
-  <div class="room" onclick="location.href='calendar.html?room=Room1'">
-    Room 1
-  </div>
-  <div class="room" onclick="location.href='calendar.html?room=Room2'">
-    Room 2
-  </div>
-  <div class="room" onclick="location.href='calendar.html?room=Room3'">
-    Room 3
-  </div>
+  <div id="roomsContainer"></div>
+
+  <script>
+    function loadRooms() {
+      // Fetch the rooms array from localStorage
+      let rooms = JSON.parse(localStorage.getItem("rooms")) || [];
+      let container = document.getElementById('roomsContainer');
+      container.innerHTML = '';
+
+      // If no rooms exist, show a simple message
+      if (rooms.length === 0) {
+        container.innerHTML = '<p>No rooms available. Please contact Admin to add rooms.</p>';
+        return;
+      }
+
+      // Otherwise, create a clickable div for each room
+      rooms.forEach(roomName => {
+        let div = document.createElement('div');
+        div.className = 'room';
+        div.textContent = roomName;
+
+        // Example: redirect to a "calendar.html" with the room name in the query string
+        div.addEventListener('click', () => {
+          window.location.href = `calendar.html?room=${encodeURIComponent(roomName)}`;
+        });
+
+        container.appendChild(div);
+      });
+    }
+
+    // Load rooms when the page loads
+    window.addEventListener('DOMContentLoaded', loadRooms);
+  </script>
 </body>
 </html>

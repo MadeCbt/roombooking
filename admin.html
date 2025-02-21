@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - Luc Booking</title>
+  <style>
+    body {
+      background-color: #f4f4f4;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .form-button {
+      width: 100%;
+      padding: 10px;
+      background-color: #28a745;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s ease;
+      margin-bottom: 10px;
+    }
+    .form-button:hover {
+      background-color: #218838;
+    }
+    input {
+      width: calc(100% - 22px);
+      padding: 8px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .password-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .password-container input {
+      width: calc(100% - 40px);
+    }
+    .toggle-password {
+      cursor: pointer;
+      font-size: 14px;
+      color: #333;
+    }
+    .list-container {
+      margin-top: 20px;
+    }
+    .list-item {
+      padding: 8px;
+      background: #e9e9e9;
+      margin: 5px 0;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .delete-btn {
+      background: red;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 5px;
+      width: auto;
+    }
+    .delete-btn:hover {
+      background: darkred;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Admin Dashboard</h1>
+  <div class="container">
+    
+    <h2>Add New User</h2>
+    <input type="text" id="newUsername" placeholder="Enter Username">
+
+    <!-- Password Input with Toggle -->
+    <div class="password-container">
+      <input type="password" id="newPassword" placeholder="Enter Password">
+      <span class="toggle-password" onclick="togglePassword()">👁️</span>
+    </div>
+
+    <button class="form-button" onclick="addUser()">Add User</button>
+
+    <div class="list-container">
+      <h2>Existing Users</h2>
+      <div id="usersList"></div>
+    </div>
+
+    <hr>
+
+    <h2>Add New Room</h2>
+    <input type="text" id="newRoom" placeholder="Enter Room Name">
+    <button class="form-button" onclick="addRoom()">Add Room</button>
+
+    <div class="list-container">
+      <h2>Existing Rooms</h2>
+      <div id="roomsList"></div>
+    </div>
+
+  </div>
+
+  <script>
+    function togglePassword() {
+      let passwordField = document.getElementById("newPassword");
+      passwordField.type = passwordField.type === "password" ? "text" : "password";
+    }
+
+    function loadData() {
+      let users = JSON.parse(localStorage.getItem("users")) || [];
+      let rooms = JSON.parse(localStorage.getItem("rooms")) || [];
+      displayUsers(users);
+      displayRooms(rooms);
+    }
+
+    function addUser() {
+      let username = document.getElementById("newUsername").value.trim();
+      let password = document.getElementById("newPassword").value.trim();
+
+      if (!username || !password) {
+        alert("Please enter a username and password.");
+        return;
+      }
+
+      let users = JSON.parse(localStorage.getItem("users")) || [];
+
+      if (users.find(user => user.username === username)) {
+        alert("Username already exists!");
+        return;
+      }
+
+      users.push({ username, password });
+      localStorage.setItem("users", JSON.stringify(users));
+      displayUsers(users);
+    }
+
+    function displayUsers(users) {
+      let usersList = document.getElementById("usersList");
+      usersList.innerHTML = "";
+
+      users.forEach((user, index) => {
+        let div = document.createElement("div");
+        div.className = "list-item";
+        div.innerHTML = `
+          <span>Username: ${user.username} | Password: ${user.password}</span>
+          <button class="delete-btn" onclick="deleteUser(${index})">Delete</button>
+        `;
+        usersList.appendChild(div);
+      });
+    }
+
+    function deleteUser(index) {
+      let users = JSON.parse(localStorage.getItem("users")) || [];
+      users.splice(index, 1);
+      localStorage.setItem("users", JSON.stringify(users));
+      displayUsers(users);
+    }
+
+    function addRoom() {
+      let roomName = document.getElementById("newRoom").value.trim();
+
+      if (!roomName) {
+        alert("Please enter a room name.");
+        return;
+      }
+
+      let rooms = JSON.parse(localStorage.getItem("rooms")) || [];
+
+      if (rooms.includes(roomName)) {
+        alert("Room name already exists!");
+        return;
+      }
+
+      rooms.push(roomName);
+      localStorage.setItem("rooms", JSON.stringify(rooms));
+      displayRooms(rooms);
+    }
+
+    function displayRooms(rooms) {
+      let roomsList = document.getElementById("roomsList");
+      roomsList.innerHTML = "";
+
+      rooms.forEach((room, index) => {
+        let div = document.createElement("div");
+        div.className = "list-item";
+        div.innerHTML = `
+          <span>${room}</span>
+          <button class="delete-btn" onclick="deleteRoom(${index})">Delete</button>
+        `;
+        roomsList.appendChild(div);
+      });
+    }
+
+    function deleteRoom(index) {
+      let rooms = JSON.parse(localStorage.getItem("rooms")) || [];
+      rooms.splice(index, 1);
+      localStorage.setItem("rooms", JSON.stringify(rooms));
+      displayRooms(rooms);
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Luc Booking - Login</title>
@@ -11,48 +11,110 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
       font-family: Arial, sans-serif;
     }
     .login-container {
       background: #222;
-      padding: 20px;
-      border-radius: 5px;
+      padding: 30px;
+      border-radius: 8px;
       text-align: center;
+      width: 300px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
     }
-    input[type="text"],
-    input[type="password"] {
-      display: block;
-      width: 100%;
+    h1 {
+      color: white;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+    input[type="text"], input[type="password"] {
+      width: calc(100% - 20px);
       padding: 10px;
       margin: 10px 0;
       border: none;
-      border-radius: 3px;
+      border-radius: 5px;
+      font-size: 16px;
+      background: #333;
+      color: white;
+    }
+    input::placeholder {
+      color: #bbb;
+    }
+    .password-container {
+      display: flex;
+      align-items: center;
+      justify-content: start;
+      font-size: 14px;
+      color: white;
+      margin: 5px 0 15px 0;
+    }
+    .password-container input[type="checkbox"] {
+      margin-right: 5px;
+      cursor: pointer;
     }
     button {
       width: 100%;
-      padding: 10px;
-      background-color: #444;
+      padding: 12px;
+      background-color: #28a745;
       border: none;
-      border-radius: 3px;
+      border-radius: 5px;
       color: white;
       font-size: 16px;
       cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s ease;
     }
     button:hover {
-      background-color: #666;
+      background-color: #218838;
     }
   </style>
 </head>
 <body>
   <div class="login-container">
     <h1>Luc Booking</h1>
-    <form action="rooms.html" method="GET">
-      <input type="text" name="username" placeholder="Username" required>
-      <input type="password" name="password" placeholder="Password" required>
-      <button type="submit">Log In</button>
-    </form>
+    <input type="text" id="username" placeholder="Username" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <div class="password-container">
+      <input type="checkbox" id="togglePassword">
+      <label for="togglePassword">Show Password</label>
+    </div>
+    <button onclick="login()">Log In</button>
   </div>
+
+  <script>
+    // Toggle password visibility
+    document.getElementById('togglePassword').addEventListener('change', function () {
+      let passwordField = document.getElementById('password');
+      passwordField.type = this.checked ? 'text' : 'password';
+    });
+
+    function login() {
+      let username = document.getElementById('username').value.trim();
+      let password = document.getElementById('password').value.trim();
+      if (!username || !password) {
+        alert("Please enter username and password.");
+        return;
+      }
+
+      // Default admin credentials
+      const adminCredentials = { username: "admin", password: "admin123" };
+
+      // Get stored regular users from localStorage (initially empty)
+      let users = JSON.parse(localStorage.getItem("users")) || [];
+
+      // If admin logs in, redirect to the admin dashboard
+      if (username === adminCredentials.username && password === adminCredentials.password) {
+        window.location.href = "admin.html";
+        return;
+      }
+
+      // Otherwise, check if the user exists
+      let userFound = users.find(user => user.username === username && user.password === password);
+      if (userFound) {
+        window.location.href = "rooms.html"; // Redirect regular user to room booking page
+      } else {
+        alert("Invalid username or password.");
+      }
+    }
+  </script>
 </body>
 </html>
-
